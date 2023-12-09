@@ -1,0 +1,80 @@
+import pandas as pd
+import numpy as np
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.impute import SimpleImputer
+from sklearn.datasets import make_regression  # Sample dataset generator
+import matplotlib.pyplot as plt
+
+# Assuming your data is in a file named 'your_data.csv'
+file_path = 'BTM_hourlyy2.csv'
+
+# Load your data into a Pandas DataFrame
+df = pd.read_csv(file_path)
+df=df.apply(pd.to_numeric,errors='coerce')
+
+# Replace 'None' values with actual NaN values for easier handling
+df.replace('None', pd.NA, inplace=True)
+
+# Separating features and target variable
+X = df.drop('PM2.5', axis=1)  # Features
+y = df['PM2.5']  # Target variable
+
+# Creating SimpleImputer instance to impute missing values with the mean
+imputer = SimpleImputer(strategy='most_frequent')
+
+# Creating SimpleImputer instance to impute missing values with the mean for y
+imputer_y = SimpleImputer(strategy='most_frequent')
+
+# Impute missing values in the features
+X_imputed = imputer.fit_transform(X)
+
+# Reshape y to a 2D array
+y = y.values.reshape(-1, 1)
+y_imputed = imputer_y.fit_transform(y)
+
+# Generating sample dataset (you can replace this with your own dataset)
+X, y = make_regression(n_samples=1000, n_features=10, noise=0.1, random_state=42)
+
+# Splitting the dataset into training and testing sets
+X_train, X_test, y_train, y_test = train_test_split(X_imputed, y_imputed, test_size=0.4, random_state=42)
+
+# Initialize Random Forest model
+rf_model = RandomForestRegressor(n_estimators=100,random_state=42)
+
+# Train the model
+rf_model.fit(X_train, y_train)
+
+# Making predictions on the test set
+y_pred = rf_model.predict(X_test)
+
+# Evaluating the model (optional)
+from sklearn.metrics import mean_squared_error, r2_score
+
+mse = mean_squared_error(y_test, y_pred)
+r2 = r2_score(y_test, y_pred)
+
+print(f"Mean Squared Error: {mse}")
+print(f"R^2 Score: {r2}")
+
+# Calculate RMSE
+rmse = np.sqrt(mean_squared_error(y_test, y_pred))
+print(f"Root Mean Squared Error (RMSE): {rmse}")
+
+# Evaluate the model
+accuracy = rf_model.score(X_test, y_test)
+print(f"Random Forest Accuracy: {accuracy}") 
+
+# Create a DataFrame to hold predicted and actual values
+results = pd.DataFrame({'Predicted_PM2.5': y_pred.flatten(), 'Actual_PM2.5': y_test.flatten()})
+
+# Printing the first few rows of the DataFrame
+print(results.head())
+
+# Scatter plot of actual vs. predicted values
+plt.figure(figsize=(8, 6))
+plt.scatter(y_test, y_pred, alpha=0.5)
+plt.xlabel('Actual PM2.5')
+plt.ylabel('Predicted PM2.5')
+plt.title('Actual vs. Predicted PM2.5 values')
+plt.show()
