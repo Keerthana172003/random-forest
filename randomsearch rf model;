@@ -1,0 +1,94 @@
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.impute import SimpleImputer
+from sklearn.metrics import r2_score, mean_squared_error, mean_absolute_error
+from sklearn.model_selection import RandomizedSearchCV
+from sklearn.datasets import make_regression 
+from scipy.stats import randint, uniform
+
+# Load your data into a Pandas DataFrame
+file_path = '/content/silkboard.csv'
+
+# Load your data into a Pandas DataFrame
+df = pd.read_csv(file_path)
+print(df.columns)  # Check the column names in the DataFrame
+df = df.apply(pd.to_numeric, errors='coerce')
+
+# Replace 'None' values with actual NaN values for easier handling
+df.replace('None', pd.NA, inplace=True)
+
+# Separating features and target variable
+X = df.drop('PM2.5', axis=1)  # Features
+y = df['PM2.5']  # Target variable
+
+# Creating SimpleImputer instance to impute missing values with the mean
+imputer = SimpleImputer(strategy='most_frequent')
+
+# Creating SimpleImputer instance to impute missing values with the mean for y
+imputer_y = SimpleImputer(strategy='most_frequent')
+
+# Impute missing values in the features
+X_imputed = imputer.fit_transform(X)
+
+# Reshape y to a 2D array
+y = y.values.reshape(-1, 1)
+y_imputed = imputer_y.fit_transform(y)
+
+# Generating sample dataset (you can replace this with your own dataset)
+X, y = make_regression(n_samples=1000, n_features=10, noise=0.1, random_state=42)
+
+# Splitting the dataset into training and testing sets
+X_train, X_test, y_train, y_test = train_test_split(X_imputed, y_imputed, test_size=0.4, random_state=42)
+
+
+# Define the hyperparameter distributions
+param_dist = {
+    'n_estimators': randint(100, 1000),
+    'max_depth': randint(5, 30),
+    'min_samples_split': randint(2, 20),
+    'min_samples_leaf': randint(1, 20),
+    'max_features': uniform(0.1, 0.9)
+}
+
+# Create a RandomForestRegressor
+rf = RandomForestRegressor(random_state=42)
+
+# RandomizedSearchCV
+random_search = RandomizedSearchCV(estimator=rf, param_distributions=param_dist,
+                                   n_iter=100, cv=5, random_state=42, scoring='r2', n_jobs=-1)
+# Fit the model
+random_search.fit(X_train, y_train)
+
+# Get the best parameters and score
+best_params = random_search.best_params_
+best_score = random_search.best_score_
+
+# Print the best parameters and score
+print("Best parameters:", best_params)
+print("Best score:", best_score)
+
+# Fit the model with best parameters from RandomizedSearchCV
+best_rf = random_search.best_estimator_
+best_rf.fit(X_train, y_train)
+
+# Make predictions on the test set using the best model
+y_pred = best_rf.predict(X_test)
+
+# Calculate R^2 score
+r2 = r2_score(y_test, y_pred)
+print(f"R^2 Score: {r2}")
+
+# Calculate Root Mean Squared Error (RMSE)
+rmse = mean_squared_error(y_test, y_pred, squared=False)
+print(f"RMSE: {rmse}")
+
+# Calculate Mean Absolute Error (MAE)
+mae = mean_absolute_error(y_test, y_pred)
+print(f"MAE: {mae}")
+
+
+RESULTS:
+R^2 Score: 0.8241857809172584
+RMSE: 7.508703016963006
+MAE: 2.4956845226477062
