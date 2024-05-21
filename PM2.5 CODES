@@ -1,0 +1,187 @@
+CODES TO BE USED FOR PM2.5 PAPER..DT,XTRA TRESS,RANDOM FOREST,ENSEMBLE,RANDOM SEARCH CV,GRID SEARCH,LIME AND SHAP:
+
+from google.colab import drive
+drive.mount('/content/drive')
+import numpy as np
+import pandas as pd
+df=pd.read_csv('/content/drive/MyDrive/ovariantotal.csv')
+df.shape
+df.info()
+df.head()
+x=df.drop('TYPE',axis=1)
+y=df['TYPE']
+from sklearn.model_selection import train_test_split
+X_train,X_test,y_train,y_test=train_test_split(x,y,test_size=0.30,random_state=1)
+
+           DECISION TREE
+from sklearn.tree import DecisionTreeClassifier
+dt=DecisionTreeClassifier()
+dt.fit(X_train,y_train)
+y_pred3=dt.predict(X_test)
+from sklearn.metrics import confusion_matrix,accuracy_score,precision_score,recall_score,f1_score
+AS=accuracy_score(y_test,y_pred3)
+PS=precision_score(y_test,y_pred3)
+RS=recall_score(y_test,y_pred3)
+FS=f1_score(y_test,y_pred3)
+print('AS:',AS)
+print('PS:',PS)
+print('RS:',RS)
+print('FS:',FS)
+print('matrix',confusion_matrix(y_test,y_pred3))
+
+       RANDOM FOREST
+from sklearn.ensemble import  RandomForestClassifier
+rf=RandomForestClassifier(n_estimators=10)
+rf.fit(X_train,y_train)
+y_pred5=rf.predict(X_test)
+from sklearn.metrics import confusion_matrix,accuracy_score,precision_score,recall_score,f1_score,classification_report
+AS=accuracy_score(y_test,y_pred4)
+PS=precision_score(y_test,y_pred4)
+RS=recall_score(y_test,y_pred4)
+FS=f1_score(y_test,y_pred4)
+print('AS:',AS)
+print('PS:',PS)
+print('RS:',RS)
+print('FS:',FS)
+print('matrix',confusion_matrix(y_test,y_pred4))
+print(classification_report(y_test,y_pred5))
+
+         ENSEMBLE TECHNIQUE
+from sklearn.preprocessing import LabelEncoder
+from sklearn.ensemble import RandomForestClassifier
+lb=LabelEncoder()
+x=np.array([y_pred1,y_pred2,y_pred3,y_pred4]).T
+print(x)
+meta_learner=RandomForestClassifier()
+meta_learner.fit(x,y_test)
+pred2=meta_learner.predict(x)
+from sklearn.metrics import confusion_matrix,accuracy_score,precision_score,recall_score,f1_score,classification_report
+AS=accuracy_score(y_test,pred2)
+PS=precision_score(y_test,pred2)
+RS=recall_score(y_test,pred2)
+FS=f1_score(y_test,pred2)
+print('AS:',AS)
+print('PS:',PS)
+print('RS:',RS)
+print('FS:',FS)
+print('matrix',confusion_matrix(y_test,pred2))
+print(classification_report(y_test,pred2))
+
+            LIME 
+pip install lime
+import lime
+import lime.lime_tabular
+from lime.lime_tabular import LimeTabularExplainer
+explainer=LimeTabularExplainer(X_test.values,
+                               feature_names=X_train.columns.values.tolist(),
+                               class_names=['TYPE'],mode='regression')
+#now explain a prediction
+exp=explainer.explain_instance(X_test.values[60],
+                               clf.predict,
+                               num_features=10)
+#expln as a fig
+exp.as_pyplot_figure()
+from matplotlib import pyplot as plt
+plt.tight_layout()
+exp.show_in_notebook(show_table=True)
+
+          SHAP
+pip install shapash
+from sklearn.ensemble import  RandomForestClassifier
+rf=RandomForestClassifier(n_estimators=10)
+rf.fit(X_train,y_train)
+y_pred5=rf.predict(X_test)
+from sklearn.metrics import confusion_matrix,accuracy_score,precision_score,recall_score,f1_score,classification_report
+AS=accuracy_score(y_test,y_pred4)
+PS=precision_score(y_test,y_pred4)
+RS=recall_score(y_test,y_pred4)
+FS=f1_score(y_test,y_pred4)
+print('AS:',AS)
+print('PS:',PS)
+print('RS:',RS)
+print('FS:',FS)
+print('matrix',confusion_matrix(y_test,y_pred4))
+
+        XTRA TRESS
+import pandas as pd
+import numpy as np
+from sklearn.model_selection import train_test_split
+from sklearn.impute import SimpleImputer
+from sklearn.ensemble import ExtraTreesRegressor
+from sklearn.metrics import mean_squared_error, r2_score
+from sklearn.datasets import make_regression  # Sample dataset generator
+import matplotlib.pyplot as plt
+
+# Assuming your data is in a file named 'your_data.csv'
+file_path = '/content/silkboard.csv'
+
+# Load your data into a Pandas DataFrame
+df = pd.read_csv(file_path)
+df=df.apply(pd.to_numeric,errors='coerce')
+
+# Replace 'None' values with actual NaN values for easier handling
+df.replace('None', pd.NA, inplace=True)
+
+# Separating features and target variable
+X = df.drop('PM2.5', axis=1)  # Features
+y = df['PM2.5']  # Target variable
+
+# Creating SimpleImputer instance to impute missing values with the mean
+imputer = SimpleImputer(strategy='most_frequent')
+
+# Creating SimpleImputer instance to impute missing values with the mean for y
+imputer_y = SimpleImputer(strategy='most_frequent')
+
+# Impute missing values in the features
+X_imputed = imputer.fit_transform(X)
+
+# Reshape y to a 2D array
+y = y.values.reshape(-1, 1)
+y_imputed = imputer_y.fit_transform(y)
+
+# Generating sample dataset (you can replace this with your own dataset)
+X, y = make_regression(n_samples=1000, n_features=10, noise=0.1, random_state=42)
+
+# Splitting the dataset into training and testing sets
+X_train, X_test, y_train, y_test = train_test_split(X_imputed, y_imputed, test_size=0.2, random_state=42)
+
+# Create the Extra Trees Regressor
+extra_trees = ExtraTreesRegressor(n_estimators=1200, max_depth=25, random_state=42)
+
+# Fit the model on the training data
+extra_trees.fit(X_train, y_train)
+
+# Predict on the test set
+predictions = extra_trees.predict(X_test)
+
+# Calculate RMSE
+rmse = np.sqrt(mean_squared_error(y_test, predictions))
+print(f"Root Mean Squared Error (RMSE): {rmse}")
+
+# Calculate R-squared
+r2 = r2_score(y_test, predictions)
+print(f"R-squared: {r2}")
+
+# Calculate Mean Squared Error
+mse = mean_squared_error(y_test, predictions)
+print(f"Mean Squared Error (MSE): {mse}")
+
+# Plotting actual vs predicted values
+plt.figure(figsize=(8, 6))
+plt.scatter(y_test, predictions, alpha=0.5)
+plt.xlabel('Actual Values')
+plt.ylabel('Predicted Values')
+plt.title('Actual vs Predicted Values (Extra Trees Regression)')
+plt.show()
+f1=pd.DataFrame({'Feature':X_train.columns,'Importance':rf.feature_importances_})
+f1.sort_values(by='Importance',ascending=False,ignore_index=True)
+from shapash.explainer.smart_explainer import SmartExplainer
+xpl=SmartExplainer(rf)
+xpl.compile(x=X_test)
+xpl.plot.features_importance()
+import random
+subset=random.choices(X_test.index,k=50)
+xpl.plot.features_importance(selection=subset)
+xpl.plot.local_plot(index=random.choice(X_test.index))
+#this for local explanation
+xpl.plot.contribution_plot('HE4')
